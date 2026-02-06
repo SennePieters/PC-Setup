@@ -36,7 +36,11 @@ if [ "$OS" == "Linux" ]; then
     TARGET="$TEMP_DIR/main.sh"
     
     echo "Downloading Linux setup script..."
-    curl -fsSL "$REPO_URL/main.sh" -o "$TARGET"
+    if [ -n "$GITHUB_TOKEN" ]; then
+        curl -fsSL -H "Authorization: token $GITHUB_TOKEN" "$REPO_URL/main.sh" -o "$TARGET"
+    else
+        curl -fsSL "$REPO_URL/main.sh" -o "$TARGET"
+    fi
 
     if [ -f "$TARGET" ]; then
         chmod +x "$TARGET"
@@ -48,7 +52,11 @@ if [ "$OS" == "Linux" ]; then
 elif [ "$OS" == "Windows" ]; then
     echo "Windows environment detected."
     echo "Downloading Windows setup script..."
-    curl -fsSL "$REPO_URL/setup.ps1" -o "$TEMP_DIR/setup.ps1"
+    if [ -n "$GITHUB_TOKEN" ]; then
+        curl -fsSL -H "Authorization: token $GITHUB_TOKEN" "$REPO_URL/setup.ps1" -o "$TEMP_DIR/setup.ps1"
+    else
+        curl -fsSL "$REPO_URL/setup.ps1" -o "$TEMP_DIR/setup.ps1"
+    fi
     powershell.exe -ExecutionPolicy Bypass -File "$(cygpath -w "$TEMP_DIR/setup.ps1")"
 else
     echo "Unsupported Operating System: $OS_TYPE"
