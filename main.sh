@@ -1,9 +1,17 @@
 #!/bin/bash
 
 # --- Configuration & Styles ---
-BORDER_STYLE="gum style --foreground 212 --border-foreground 212 --border double --align center --width 50 --margin '1 2' --padding '2 4'"
-ERROR_STYLE="gum style --foreground 196 --bold"
-SUCCESS_STYLE="gum style --foreground 76 --bold"
+border_style() {
+    gum style --foreground 212 --border-foreground 212 --border double --align center --width 50 --margin "1 2" --padding "2 4" "$@"
+}
+
+error_style() {
+    gum style --foreground 196 --bold "$@"
+}
+
+success_style() {
+    gum style --foreground 76 --bold "$@"
+}
 
 # --- Helper Functions ---
 
@@ -38,9 +46,9 @@ install_packages() {
     # Install using paru (handles both Repo and AUR)
     if gum spin --spinner dot --title "Installing: ${to_install[*]}..." -- \
         paru -S --noconfirm "${to_install[@]}"; then
-        $SUCCESS_STYLE "Successfully installed: ${to_install[*]}"
+        success_style "Successfully installed: ${to_install[*]}"
     else
-        $ERROR_STYLE "Failed to install one or more packages."
+        error_style "Failed to install one or more packages."
     fi
 }
 
@@ -75,7 +83,7 @@ fi
 
 while true; do
     clear
-    echo "$($BORDER_STYLE 'CachyOS Automation Tool')"
+    border_style "CachyOS Automation Tool"
     
     CHOICE=$(gum choose "Install Core Apps" "Gaming Setup" "Dev Tools" "System Tweaks" "Dotfiles" "Exit")
     
@@ -99,7 +107,7 @@ while true; do
             if gum confirm "Apply dotfiles using Stow?"; then
                 # Assumes the repo structure allows 'stow .' or specific folders
                 gum spin --spinner minidot --title "Stowing config..." -- stow .
-                $SUCCESS_STYLE "Dotfiles applied!"
+                success_style "Dotfiles applied!"
             fi
             ;;
         "Exit")
