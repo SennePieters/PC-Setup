@@ -33,13 +33,13 @@ if [ "$OS" == "Linux" ]; then
     fi
 
     # Hand off to the Linux GUI script
-    TARGET="$TEMP_DIR/main.sh"
+    TARGET="$TEMP_DIR/linux/main.sh"
     
     echo "Downloading Linux setup script..."
     if [ -n "$GITHUB_TOKEN" ]; then
-        curl -fsSL -H "Authorization: token $GITHUB_TOKEN" "$REPO_URL/main.sh" -o "$TARGET"
+        curl -fsSL -H "Authorization: token $GITHUB_TOKEN" "$REPO_URL/linux/main.sh" -o "$TARGET"
     else
-        curl -fsSL "$REPO_URL/main.sh" -o "$TARGET"
+        curl -fsSL "$REPO_URL/linux/main.sh" -o "$TARGET"
     fi
 
     if [ -f "$TARGET" ]; then
@@ -53,11 +53,11 @@ elif [ "$OS" == "Windows" ]; then
     echo "Windows environment detected."
     echo "Downloading Windows setup script..."
     if [ -n "$GITHUB_TOKEN" ]; then
-        curl -fsSL -H "Authorization: token $GITHUB_TOKEN" "$REPO_URL/setup.ps1" -o "$TEMP_DIR/setup.ps1"
+        curl -fsSL -H "Authorization: token $GITHUB_TOKEN" "$REPO_URL/windows/setup.ps1" -o "$TEMP_DIR/windows/setup.ps1"
     else
-        curl -fsSL "$REPO_URL/setup.ps1" -o "$TEMP_DIR/setup.ps1"
+        curl -fsSL "$REPO_URL/windows/setup.ps1" -o "$TEMP_DIR/windows/setup.ps1"
     fi
-    powershell.exe -ExecutionPolicy Bypass -File "$(cygpath -w "$TEMP_DIR/setup.ps1")"
+    powershell.exe -ExecutionPolicy Bypass -File "$(cygpath -w "$TEMP_DIR/windows/setup.ps1")"
 else
     echo "Unsupported Operating System: $OS_TYPE"
     exit 1
