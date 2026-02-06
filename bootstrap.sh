@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration: Set this to your raw repository URL
-REPO_URL="https://raw.githubusercontent.com/SennePieters/PC-Setup"
+REPO_URL="https://raw.githubusercontent.com/SennePieters/PC-Setup/main"
 
 # Detect the Operating System
 OS_TYPE=$(uname -s)
@@ -34,6 +34,7 @@ if [ "$OS" == "Linux" ]; then
 
     # Hand off to the Linux GUI script
     TARGET="$TEMP_DIR/linux/main.sh"
+    mkdir -p "$(dirname "$TARGET")"
     
     echo "Downloading Linux setup script..."
     if [ -n "$GITHUB_TOKEN" ]; then
@@ -52,6 +53,7 @@ if [ "$OS" == "Linux" ]; then
 elif [ "$OS" == "Windows" ]; then
     echo "Windows environment detected."
     echo "Downloading Windows setup script..."
+    mkdir -p "$TEMP_DIR/windows"
     if [ -n "$GITHUB_TOKEN" ]; then
         curl -fsSL -H "Authorization: token $GITHUB_TOKEN" "$REPO_URL/windows/setup.ps1" -o "$TEMP_DIR/windows/setup.ps1"
     else
