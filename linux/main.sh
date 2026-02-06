@@ -1,27 +1,16 @@
 #!/bin/bash
 
-# --- Configuration & Styles ---
-border_style() {
-    gum style --foreground 212 --border-foreground 212 --border double --align center --width 50 --margin "1 2" --padding "2 4" "$@"
-}
-
-error_style() {
-    gum style --foreground 196 --bold "$@"
-}
-
-success_style() {
-    gum style --foreground 76 --bold "$@"
-}
-
 # --- Helper Functions ---
 
-# Refresh sudo credentials upfront to prevent spinner interruptions
 refresh_sudo() {
+    # Prompt for sudo password via GUI if needed
     if ! sudo -v; then
-        echo "Sudo privileges are required."
-        exit 1
+        if ! zenity --password --title="Sudo Authentication" | sudo -S -v; then
+            zenity --error --text="Authentication failed or cancelled."
+            exit 1
+        fi
     fi
-    # Keep sudo alive in background
+    # Keep sudo alive
     (while true; do sudo -v; sleep 60; done) &
     SUDO_PID=$!
     trap 'kill $SUDO_PID' EXIT
@@ -31,7 +20,6 @@ install_packages() {
     local pkgs=("$@")
     local to_install=()
 
-    # Check if packages are already installed
     for pkg in "${pkgs[@]}"; do
         if ! pacman -Qi "$pkg" &> /dev/null; then
             to_install+=("$pkg")
@@ -39,36 +27,26 @@ install_packages() {
     done
 
     if [ ${#to_install[@]} -eq 0 ]; then
-        echo "All selected packages are already installed."
+        zenity --info --text="All selected packages are already installed." --timeout=3
         return
     fi
 
-    # Install using paru (handles both Repo and AUR)
-    if gum spin --spinner dot --title "Installing: ${to_install[*]}..." -- \
-        paru -S --noconfirm "${to_install[@]}"; then
-        success_style "Successfully installed: ${to_install[*]}"
-    else
-        error_style "Failed to install one or more packages."
-    fi
-}
-
-check_cachyos_kernel() {
-    # Check for AVX2 support (x86-64-v3) which is common for modern gaming CPUs
-    if lscpu | grep -q "avx2"; then
-        if ! pacman -Qi linux-cachyos-v3 &> /dev/null; then
-            if gum confirm "AVX2 (v3) CPU detected. Install optimized 'linux-cachyos-v3'?"; then
-                install_packages "linux-cachyos-v3" "linux-cachyos-v3-headers"
-            fi
+    # Install with a pulsating progress bar
+    (
+        echo "# Installing: ${to_install[*]}"
+        # Redirect output to prevent clutter, rely on exit code
+        if paru -S --noconfirm "${to_install[@]}" > /dev/null 2>&1; then
+            echo "100"
         else
-            echo "Optimized kernel (v3) is already installed."
+            echo "fail"
+            exit 1
         fi
-    elif lscpu | grep -q "avx512"; then
-         # Check for v4 (AVX512)
-         if gum confirm "AVX512 detected. Install optimized 'linux-cachyos-v4'?"; then
-             install_packages "linux-cachyos-v4" "linux-cachyos-v4-headers"
-         fi
+    ) | zenity --progress --pulsate --title="Installing Packages" --text="Starting installation..." --auto-close
+
+    if [ $? -eq 0 ]; then
+        zenity --info --text="Successfully installed: ${to_install[*]}" --timeout=3
     else
-        echo "No specific CachyOS kernel optimization detected for this hardware."
+        zenity --error --text="Failed to install one or more packages."
     fi
 }
 
@@ -76,47 +54,51 @@ check_cachyos_kernel() {
 
 refresh_sudo
 
-# Ensure paru is installed (CachyOS usually has it, but just in case)
+# Ensure paru is installed
 if ! command -v paru &> /dev/null; then
-    gum spin --title "Installing Paru..." -- sudo pacman -S --noconfirm paru
+    ( echo "# Installing Paru..."; sudo pacman -S --noconfirm paru > /dev/null 2>&1 ) | \
+    zenity --progress --pulsate --title="Setup" --text="Installing Paru..." --auto-close
 fi
 
 while true; do
-    clear
-    border_style "CachyOS Automation Tool"
-    
-    CHOICE=$(gum choose "Install Core Apps" "Gaming Setup" "Dev Tools" "System Tweaks" "Dotfiles" "Exit")
-    
+    CHOICE=$(zenity --list --title="CachyOS Automation Tool" --text="Select an action:" \
+        --column="Action" \
+        "Install Core Apps" \
+        "Gaming Setup" \
+        "Dev Tools" \
+        "System Tweaks" \
+        "Dotfiles" \
+        "Exit" \
+        --height=350 --width=350)
+
+    # Handle Cancel/Close
+    if [ -z "$CHOICE" ] || [ "$CHOICE" == "Exit" ]; then
+        break
+    fi
+
     case "$CHOICE" in
         "Install Core Apps")
-            APPS=$(gum choose --no-limit "firefox" "discord" "spotify" "vlc" "obsidian" "thunar")
+            APPS=$(zenity --list --checklist --title="Core Apps" --column="Install" --column="App" \
+                FALSE "firefox" FALSE "discord" FALSE "spotify" FALSE "vlc" FALSE "obsidian" FALSE "thunar" \
+                --separator=" ")
             [ -n "$APPS" ] && install_packages $APPS
             ;;
         "Gaming Setup")
-            APPS=$(gum choose --no-limit "steam" "lutris" "heroic-games-launcher-bin" "gamemode" "mangohud" "protonup-qt")
+            APPS=$(zenity --list --checklist --title="Gaming Setup" --column="Install" --column="App" \
+                FALSE "steam" FALSE "lutris" FALSE "heroic-games-launcher-bin" FALSE "gamemode" FALSE "mangohud" FALSE "protonup-qt" \
+                --separator=" ")
             [ -n "$APPS" ] && install_packages $APPS
             ;;
         "Dev Tools")
-            APPS=$(gum choose --no-limit "visual-studio-code-bin" "git" "docker" "docker-compose" "neovim" "kitty")
+            APPS=$(zenity --list --checklist --title="Dev Tools" --column="Install" --column="App" \
+                FALSE "visual-studio-code-bin" FALSE "git" FALSE "docker" FALSE "docker-compose" FALSE "neovim" FALSE "kitty" \
+                --separator=" ")
             [ -n "$APPS" ] && install_packages $APPS
             ;;
-        "System Tweaks")
-            check_cachyos_kernel
-            ;;
         "Dotfiles")
-            if gum confirm "Apply dotfiles using Stow?"; then
-                # Assumes the repo structure allows 'stow .' or specific folders
-                gum spin --spinner minidot --title "Stowing config..." -- stow .
-                success_style "Dotfiles applied!"
+            if zenity --question --text="Apply dotfiles using Stow?"; then
+                ( echo "# Stowing..."; stow . ) | zenity --progress --pulsate --auto-close
             fi
             ;;
-        "Exit")
-            echo "Goodbye!"
-            break
-            ;;
     esac
-    
-    echo ""
-    gum style --faint "Press any key to continue..."
-    read -n 1 -s
 done

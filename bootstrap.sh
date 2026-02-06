@@ -22,30 +22,12 @@ TEMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
 if [ "$OS" == "Linux" ]; then
-    echo "Select Interface:"
-    echo "1) Terminal UI (Gum) - Keyboard driven"
-    echo "2) Graphical UI (Zenity) - Mouse driven"
-    read -r -p "Choice [1]: " UI_CHOICE < /dev/tty
-    UI_CHOICE=${UI_CHOICE:-1}
+    SCRIPT_NAME="main.sh"
 
-    if [ "$UI_CHOICE" == "2" ]; then
-        SCRIPT_NAME="main_gui.sh"
-        # Check for Zenity
-        if ! command -v zenity &> /dev/null; then
-            echo "Zenity not found. Installing..."
-            sudo pacman -S --noconfirm zenity < /dev/tty
-        fi
-    else
-        SCRIPT_NAME="main.sh"
-        # Check for Gum
-        if ! command -v gum &> /dev/null; then
-            echo "Gum not found. Installing..."
-            if command -v pacman &> /dev/null; then
-                sudo pacman -S --noconfirm gum < /dev/tty
-            else
-                echo "Warning: Package manager not supported. Please install 'gum' manually."
-            fi
-        fi
+    # Check for Zenity (GUI dependency)
+    if ! command -v zenity &> /dev/null; then
+        echo "Zenity not found. Installing..."
+        sudo pacman -S --noconfirm zenity < /dev/tty
     fi
 
     # Hand off to the Linux GUI script
