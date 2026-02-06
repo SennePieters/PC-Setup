@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration: Set this to your raw repository URL
-REPO_URL="https://raw.githubusercontent.com/SennePieters/PC-Setup/main"
+REPO_URL="https://raw.githubusercontent.com/SennePieters/PC-Setup"
 
 # Detect the Operating System
 OS_TYPE=$(uname -s)
