@@ -22,25 +22,41 @@ TEMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
 if [ "$OS" == "Linux" ]; then
-    # Check for Gum (GUI dependency)
-    if ! command -v gum &> /dev/null; then
-        echo "Gum not found. Installing..."
-        if command -v pacman &> /dev/null; then
-            sudo pacman -S --noconfirm gum
-        else
-            echo "Warning: Package manager not supported. Please install 'gum' manually."
+    echo "Select Interface:"
+    echo "1) Terminal UI (Gum) - Keyboard driven"
+    echo "2) Graphical UI (Zenity) - Mouse driven"
+    read -r -p "Choice [1]: " UI_CHOICE < /dev/tty
+    UI_CHOICE=${UI_CHOICE:-1}
+
+    if [ "$UI_CHOICE" == "2" ]; then
+        SCRIPT_NAME="main_gui.sh"
+        # Check for Zenity
+        if ! command -v zenity &> /dev/null; then
+            echo "Zenity not found. Installing..."
+            sudo pacman -S --noconfirm zenity < /dev/tty
+        fi
+    else
+        SCRIPT_NAME="main.sh"
+        # Check for Gum
+        if ! command -v gum &> /dev/null; then
+            echo "Gum not found. Installing..."
+            if command -v pacman &> /dev/null; then
+                sudo pacman -S --noconfirm gum < /dev/tty
+            else
+                echo "Warning: Package manager not supported. Please install 'gum' manually."
+            fi
         fi
     fi
 
     # Hand off to the Linux GUI script
-    TARGET="$TEMP_DIR/linux/main.sh"
+    TARGET="$TEMP_DIR/linux/$SCRIPT_NAME"
     mkdir -p "$(dirname "$TARGET")"
     
     echo "Downloading Linux setup script..."
     if [ -n "$GITHUB_TOKEN" ]; then
-        curl -fsSL -H "Authorization: token $GITHUB_TOKEN" "$REPO_URL/linux/main.sh" -o "$TARGET"
+        curl -fsSL -H "Authorization: token $GITHUB_TOKEN" "$REPO_URL/linux/$SCRIPT_NAME" -o "$TARGET" < /dev/null
     else
-        curl -fsSL "$REPO_URL/linux/main.sh" -o "$TARGET"
+        curl -fsSL "$REPO_URL/linux/$SCRIPT_NAME" -o "$TARGET" < /dev/null
     fi
 
     if [ -f "$TARGET" ]; then
