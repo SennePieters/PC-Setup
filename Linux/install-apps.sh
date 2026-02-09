@@ -5,7 +5,7 @@ paru -Syyu
 # enable update checker
 systemctl --user enable --now arch-update.timer
 
-# gaming files
+# gaming meta files
 paru -S cachyos-gaming-meta
 
 # install my apps
