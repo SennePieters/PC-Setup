@@ -1,0 +1,18 @@
+# --- Core Apps ---
+discord
+google-chrome
+brave-bin
+parsec-bin
+
+# --- Development ---
+visual-studio-code-bin
+docker
+docker-compose
+
+# --- Gaming ---
+steam
+obs-studio
+modrinth-app-bin
+
+# --- meta files ---
+cachyos-gaming-meta

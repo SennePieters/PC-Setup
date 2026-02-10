@@ -1,7 +1,11 @@
 #!/bin/bash
 
-# Configuration: Set this to your raw repository URL
-REPO_URL="https://raw.githubusercontent.com/SennePieters/PC-Setup/main"
+# Configuration
+REPO_URL="https://github.com/SennePieters/PC-Setup"
+BRANCH="main"
+REPO_NAME=$(basename "$REPO_URL")
+ARCHIVE_URL="$REPO_URL/archive/$BRANCH.tar.gz"
+ROOT_DIR_IN_ARCHIVE="$REPO_NAME-$BRANCH"
 
 # Detect the Operating System
 OS_TYPE=$(uname -s)
@@ -24,40 +28,44 @@ trap 'rm -rf "$TEMP_DIR"' EXIT
 if [ "$OS" == "Linux" ]; then
     SCRIPT_NAME="main.sh"
 
-    # Check for Zenity (GUI dependency)
-    if ! command -v zenity &> /dev/null; then
-        echo "Zenity not found. Installing..."
-        sudo pacman -S --noconfirm zenity < /dev/tty
+    # Check for Gum (TUI dependency)
+    if ! command -v gum &> /dev/null; then
+        echo "Gum not found. Installing..."
+        sudo pacman -S --noconfirm gum < /dev/tty
     fi
 
-    # Hand off to the Linux GUI script
-    TARGET="$TEMP_DIR/$OS/$SCRIPT_NAME"
-    mkdir -p "$(dirname "$TARGET")"
-    
-    echo "Downloading $OS setup script..."
-    if [ -n "$GITHUB_TOKEN" ]; then
-        curl -fsSL -H "Authorization: token $GITHUB_TOKEN" "$REPO_URL/$OS/$SCRIPT_NAME" -o "$TARGET" < /dev/null
-    else
-        curl -fsSL "$REPO_URL/$OS/$SCRIPT_NAME" -o "$TARGET" < /dev/null
-    fi
+    echo "Downloading setup files..."
+    # Download the archive and extract only the OS-specific and settings folders
+    # Note: This still downloads the whole (small) archive but only extracts what's needed.
+    curl -L "$ARCHIVE_URL" | tar -xz -C "$TEMP_DIR" --strip-components=1 \
+        "$ROOT_DIR_IN_ARCHIVE/$OS" \
+        "$ROOT_DIR_IN_ARCHIVE/settings"
 
-    if [ -f "$TARGET" ]; then
-        chmod +x "$TARGET"
-        "$TARGET"
+    # Run the script from the OS directory
+    TARGET_DIR="$TEMP_DIR/$OS"
+    if [ -d "$TARGET_DIR" ]; then
+        (cd "$TARGET_DIR" && chmod +x "$SCRIPT_NAME" && ./"$SCRIPT_NAME")
     else
-        echo "Error: Failed to download main.sh from $REPO_URL"
+        echo "Error: $OS folder not found in download. It might not exist in the repository."
         exit 1
     fi
 elif [ "$OS" == "Windows" ]; then
+    SCRIPT_NAME="setup.ps1"
     echo "$OS environment detected."
-    echo "Downloading $OS setup script..."
-    mkdir -p "$TEMP_DIR/$OS"
-    if [ -n "$GITHUB_TOKEN" ]; then
-        curl -fsSL -H "Authorization: token $GITHUB_TOKEN" "$REPO_URL/$OS/setup.ps1" -o "$TEMP_DIR/$OS/setup.ps1"
+
+    echo "Downloading setup files..."
+    # Download the archive and extract only the OS-specific and settings folders
+    curl -L "$ARCHIVE_URL" | tar -xz -C "$TEMP_DIR" --strip-components=1 \
+        "$ROOT_DIR_IN_ARCHIVE/$OS" \
+        "$ROOT_DIR_IN_ARCHIVE/settings"
+
+    TARGET_DIR="$TEMP_DIR/$OS"
+    if [ -d "$TARGET_DIR" ]; then
+        powershell.exe -ExecutionPolicy Bypass -File "$(cygpath -w "$TARGET_DIR/$SCRIPT_NAME")"
     else
-        curl -fsSL "$REPO_URL/$OS/setup.ps1" -o "$TEMP_DIR/$OS/setup.ps1"
+        echo "Error: $OS folder not found in download. It might not exist in the repository."
+        exit 1
     fi
-    powershell.exe -ExecutionPolicy Bypass -File "$(cygpath -w "$TEMP_DIR/$OS/setup.ps1")"
 else
     echo "Unsupported Operating System: $OS_TYPE"
     exit 1
