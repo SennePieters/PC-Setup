@@ -17,7 +17,30 @@ case "$OS_TYPE" in
     *)          OS="UNKNOWN" ;;
 esac
 
-echo "Detected OS: $OS"
+# Install Gum if not present
+if ! command -v gum &> /dev/null; then
+    echo "Gum not found. Installing..."
+    if [ "$OS" == "Linux" ]; then
+        sudo pacman -S --noconfirm gum < /dev/tty
+    elif [ "$OS" == "Windows" ]; then
+        winget.exe install charmbracelet.gum --accept-source-agreements --accept-package-agreements
+    elif [ "$OS" == "Mac" ]; then
+        if command -v brew &> /dev/null; then
+            brew install gum
+        fi
+    fi
+fi
+
+gum style --foreground 212 "Detected OS: $OS"
+
+# Detect if running from local source (Development Mode)
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+if [ -d "$SCRIPT_DIR/$OS" ]; then
+    USE_LOCAL=true
+    gum style --foreground 212 "Development mode: Using local files from $SCRIPT_DIR"
+else
+    USE_LOCAL=false
+fi
 
 # Create a temporary directory for the session
 TEMP_DIR=$(mktemp -d)
@@ -28,42 +51,39 @@ trap 'rm -rf "$TEMP_DIR"' EXIT
 if [ "$OS" == "Linux" ]; then
     SCRIPT_NAME="main.sh"
 
-    # Check for Gum (TUI dependency)
-    if ! command -v gum &> /dev/null; then
-        echo "Gum not found. Installing..."
-        sudo pacman -S --noconfirm gum < /dev/tty
+    if [ "$USE_LOCAL" = true ]; then
+        gum style --foreground 212 "Copying local files..."
+        cp -r "$SCRIPT_DIR/$OS" "$TEMP_DIR/"
+        [ -d "$SCRIPT_DIR/settings" ] && cp -r "$SCRIPT_DIR/settings" "$TEMP_DIR/"
+    else
+        gum spin --spinner dot --title "Downloading setup files..." -- bash -c "curl -L '$ARCHIVE_URL' | tar -xz -C '$TEMP_DIR' --strip-components=1"
     fi
-
-    echo "Downloading setup files..."
-    # Download the archive and extract only the OS-specific and settings folders
-    # Note: This still downloads the whole (small) archive but only extracts what's needed.
-    curl -L "$ARCHIVE_URL" | tar -xz -C "$TEMP_DIR" --strip-components=1 \
-        "$ROOT_DIR_IN_ARCHIVE/$OS" \
-        "$ROOT_DIR_IN_ARCHIVE/settings"
 
     # Run the script from the OS directory
     TARGET_DIR="$TEMP_DIR/$OS"
     if [ -d "$TARGET_DIR" ]; then
         (cd "$TARGET_DIR" && chmod +x "$SCRIPT_NAME" && ./"$SCRIPT_NAME")
     else
-        echo "Error: $OS folder not found in download. It might not exist in the repository."
+        gum style --foreground 196 "Error: $OS folder not found in download. It might not exist in the repository."
         exit 1
     fi
 elif [ "$OS" == "Windows" ]; then
     SCRIPT_NAME="setup.ps1"
-    echo "$OS environment detected."
+    gum style --foreground 212 "$OS environment detected."
 
-    echo "Downloading setup files..."
-    # Download the archive and extract only the OS-specific and settings folders
-    curl -L "$ARCHIVE_URL" | tar -xz -C "$TEMP_DIR" --strip-components=1 \
-        "$ROOT_DIR_IN_ARCHIVE/$OS" \
-        "$ROOT_DIR_IN_ARCHIVE/settings"
+    if [ "$USE_LOCAL" = true ]; then
+        gum style --foreground 212 "Copying local files..."
+        cp -r "$SCRIPT_DIR/$OS" "$TEMP_DIR/"
+        [ -d "$SCRIPT_DIR/settings" ] && cp -r "$SCRIPT_DIR/settings" "$TEMP_DIR/"
+    else
+        gum spin --spinner dot --title "Downloading setup files..." -- bash -c "curl -L '$ARCHIVE_URL' | tar -xz -C '$TEMP_DIR' --strip-components=1"
+    fi
 
     TARGET_DIR="$TEMP_DIR/$OS"
     if [ -d "$TARGET_DIR" ]; then
         powershell.exe -ExecutionPolicy Bypass -File "$(cygpath -w "$TARGET_DIR/$SCRIPT_NAME")"
     else
-        echo "Error: $OS folder not found in download. It might not exist in the repository."
+        gum style --foreground 196 "Error: $OS folder not found in download. It might not exist in the repository."
         exit 1
     fi
 else

@@ -1,0 +1,14 @@
+# Maintainer: Senne Pieters
+
+pkgname=core-apps
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Core application selection."
+arch=('any')
+license=('MIT')
+depends=(
+    'discord'
+    'google-chrome'
+    'brave-bin'
+    'parsec-bin'
+)

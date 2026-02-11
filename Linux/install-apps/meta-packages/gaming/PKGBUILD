@@ -1,0 +1,14 @@
+# Maintainer: Senne Pieters
+
+pkgname=gaming
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Gaming selection."
+arch=('any')
+license=('MIT')
+depends=(
+    'steam'
+    'obs-studio'
+    'modrinth-app-bin'
+    'cachyos-gaming-meta'
+)

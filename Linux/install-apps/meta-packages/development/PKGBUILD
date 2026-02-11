@@ -1,0 +1,14 @@
+# Maintainer: Senne Pieters
+
+pkgname=development
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Development tools."
+arch=('any')
+license=('MIT')
+depends=(
+    'visual-studio-code-bin'
+    'docker'
+    'docker-compose'
+    'git'
+)
