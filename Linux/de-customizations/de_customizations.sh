@@ -3,7 +3,7 @@
 # Best practice: Use GNU Stow.
 # Structure expected: ./dotfiles/{package}/...
 
-configure_install_configs() {
+configure_de_customizations() {
     local CONFIGS_DIR="../settings"
 
     if [ ! -d "$CONFIGS_DIR" ] || [ -z "$(ls -A "$CONFIGS_DIR")" ]; then
@@ -19,13 +19,13 @@ configure_install_configs() {
         return 0
     fi
 
-    INSTALL_CONFIGS_SELECTED=$(echo "$TARGETS" | gum choose --no-limit --header "Select Configs to Stow")
+    DE_CUSTOMIZATIONS_SELECTED=$(echo "$TARGETS" | gum choose --no-limit --header "Select Configs to Stow")
 }
 
-install_install_configs() {
+install_de_customizations() {
     local CONFIGS_DIR="../settings"
-    if [ -n "$INSTALL_CONFIGS_SELECTED" ]; then
-        for app in $INSTALL_CONFIGS_SELECTED; do
+    if [ -n "$DE_CUSTOMIZATIONS_SELECTED" ]; then
+        for app in $DE_CUSTOMIZATIONS_SELECTED; do
             gum spin --spinner dot --title "Stowing $app..." -- stow -d "$CONFIGS_DIR" -t "$HOME" "$app"
         done
         gum style --foreground 76 "Configs applied."

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-configure_install_apps() {
+configure_applications() {
     # Hardcoded list of packages with descriptions for Gum
     # Format: "Directory | Description"
     local OPTIONS=(
@@ -12,16 +12,16 @@ configure_install_apps() {
     # Join array with newlines for gum
     local CHOICES=$(printf "%s\n" "${OPTIONS[@]}")
 
-    INSTALL_APPS_SELECTED=$(echo "$CHOICES" | gum choose --no-limit --height 10 --header "Select Package Groups")
+    APPLICATIONS_SELECTED=$(echo "$CHOICES" | gum choose --no-limit --height 10 --header "Select Package Groups")
 }
 
-install_install_apps() {
-    local META_PKG_DIR="install-apps/meta-packages"
+install_applications() {
+    local META_PKG_DIR="applications/meta-packages"
 
-    if [ -n "$INSTALL_APPS_SELECTED" ]; then
+    if [ -n "$APPLICATIONS_SELECTED" ]; then
         # Set Internal Field Separator to newline to handle multiple selections
         IFS=$'\n'
-        for item in $INSTALL_APPS_SELECTED; do
+        for item in $APPLICATIONS_SELECTED; do
             # Extract directory name (text before " |")
             pkg=$(echo "$item" | cut -d '|' -f1 | xargs)
             

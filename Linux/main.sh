@@ -16,16 +16,16 @@ if gum confirm "Update system?"; then
 fi
 
 # Source modules to load their functions
-source ./install-apps/install_apps.sh
 source ./system-settings/system_settings.sh
-source ./install-configs/install_configs.sh
-source ./app-settings/app_settings.sh
+source ./applications/applications.sh
+source ./application-settings/application_settings.sh
+source ./de-customizations/de_customizations.sh
 
 MODULES=(
     "System Settings"
-    "Install Applications"
-    "App Settings"
-    "Install Configs (Hyprland)"
+    "Applications"
+    "Application Settings"
+    "DE Customizations"
 )
 
 while true; do
@@ -47,10 +47,10 @@ while true; do
         fi
         
         case "$item" in
-            "Install Applications")     configure_install_apps || true ;;
             "System Settings")          configure_system_settings || true ;;
-            "Install Configs (Hyprland)") configure_install_configs || true ;;
-            "App Settings")             configure_app_settings || true ;;
+            "Applications")             configure_applications || true ;;
+            "Application Settings")     configure_application_settings || true ;;
+            "DE Customizations")        configure_de_customizations || true ;;
         esac
     done
     unset IFS
@@ -61,10 +61,10 @@ while true; do
         if [ "$item" == "Exit" ]; then continue; fi
         
         case "$item" in
-            "Install Applications")     install_install_apps || true ;;
             "System Settings")          install_system_settings || true ;;
-            "Install Configs (Hyprland)") install_install_configs || true ;;
-            "App Settings")             install_app_settings || true ;;
+            "Applications")             install_applications || true ;;
+            "Application Settings")     install_application_settings || true ;;
+            "DE Customizations")        install_de_customizations || true ;;
         esac
     done
     unset IFS

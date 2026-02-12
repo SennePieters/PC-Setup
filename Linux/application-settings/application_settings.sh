@@ -2,11 +2,11 @@
 # Framework for App-Specific Settings (Post-install hooks)
 # Select which settings to apply
 
-configure_app_settings() {
-    APP_SETTINGS_OPTIONS=("Docker Setup" "Git Config" "System Services")
-    APP_SETTINGS_SELECTED=$(printf "%s\n" "${APP_SETTINGS_OPTIONS[@]}" | gum choose --no-limit --header "Select App Settings")
+configure_application_settings() {
+    APPLICATION_SETTINGS_OPTIONS=("Docker Setup" "Git Config" "System Services")
+    APPLICATION_SETTINGS_SELECTED=$(printf "%s\n" "${APPLICATION_SETTINGS_OPTIONS[@]}" | gum choose --no-limit --header "Select App Settings")
 
-    if echo "$APP_SETTINGS_SELECTED" | grep -q "Git Config"; then
+    if echo "$APPLICATION_SETTINGS_SELECTED" | grep -q "Git Config"; then
         while true; do
             gum style --foreground 212 "Configuring Git Details..."
             APP_GIT_NAME=$(gum input --placeholder "Git User Name")
@@ -27,8 +27,8 @@ configure_app_settings() {
     fi
 }
 
-install_app_settings() {
-    for opt in $APP_SETTINGS_SELECTED; do
+install_application_settings() {
+    for opt in $APPLICATION_SETTINGS_SELECTED; do
         case "$opt" in
             "Docker Setup")
                 gum style --foreground 212 "Configuring Docker..."
