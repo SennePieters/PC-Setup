@@ -4,10 +4,17 @@
 # Structure expected: ./dotfiles/{package}/...
 
 configure_de_customizations() {
-    local CONFIGS_DIR="../settings"
+    local DE_CHOICE=$(gum choose --header "Select Desktop Environment" "Hyprland")
+
+    if [ -z "$DE_CHOICE" ]; then
+        return 0
+    fi
+
+    SELECTED_DE="${DE_CHOICE,,}"
+    local CONFIGS_DIR="de-customizations/$SELECTED_DE"
 
     if [ ! -d "$CONFIGS_DIR" ] || [ -z "$(ls -A "$CONFIGS_DIR")" ]; then
-        gum style --foreground 212 "Settings directory not found or is empty. (Expected at ../settings)"
+        gum style --foreground 212 "Settings directory not found or is empty. (Expected at $CONFIGS_DIR)"
         return 0
     fi
 
@@ -23,7 +30,7 @@ configure_de_customizations() {
 }
 
 install_de_customizations() {
-    local CONFIGS_DIR="../settings"
+    local CONFIGS_DIR="de-customizations/$SELECTED_DE"
     if [ -n "$DE_CUSTOMIZATIONS_SELECTED" ]; then
         for app in $DE_CUSTOMIZATIONS_SELECTED; do
             gum spin --spinner dot --title "Stowing $app..." -- stow -d "$CONFIGS_DIR" -t "$HOME" "$app"

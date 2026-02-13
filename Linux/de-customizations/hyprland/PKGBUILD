@@ -1,0 +1,17 @@
+# Maintainer: Senne Pieters
+
+pkgname=hyprland-setup
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="All applications for my hyprland setup"
+arch=('any')
+license=('MIT')
+depends=(
+    'hyprland'
+    'hyprshot'
+    'hyprlock'
+    'hypridle'
+    'swaync'
+    'rofi'
+    'waybar'
+)
