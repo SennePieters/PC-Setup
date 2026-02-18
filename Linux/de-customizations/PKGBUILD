@@ -11,6 +11,7 @@ depends=(
     'hyprshot'
     'hyprlock'
     'hypridle'
+    'swww'
     'swaync'
     'rofi'
     'waybar'

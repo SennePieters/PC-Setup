@@ -11,4 +11,6 @@ depends=(
     'google-chrome'
     'brave-bin'
     'parsec-bin'
+    'wootility'
+    'wooting-bg-service'
 )

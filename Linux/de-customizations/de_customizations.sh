@@ -3,26 +3,39 @@
 # Best practice: Use GNU Stow.
 # Structure expected: ./dotfiles/{package}/...
 
+DOTFILES_REPO="https://github.com/SennePieters/.dotfiles.git"
+DOTFILES_DIR="$HOME/.dotfiles"
+
 configure_de_customizations() {
-    local DE_CHOICE=$(gum choose --header "Select Desktop Environment" "Hyprland")
+    # Ensure Git is installed
+    if ! command -v git &> /dev/null; then
+        gum spin --spinner dot --title "Installing Git..." -- sudo pacman -S --noconfirm git
+    fi
 
-    if [ -z "$DE_CHOICE" ]; then
+    # Clone or Update Dotfiles
+    if [ ! -d "$DOTFILES_DIR" ]; then
+        if gum confirm "Clone dotfiles to $DOTFILES_DIR?"; then
+            gum spin --spinner dot --title "Cloning dotfiles..." -- git clone "$DOTFILES_REPO" "$DOTFILES_DIR"
+        else
+            gum style --foreground 196 "Skipping dotfiles setup."
+            return 0
+        fi
+    else
+        if gum confirm "Update dotfiles in $DOTFILES_DIR?"; then
+            gum spin --spinner dot --title "Pulling updates..." -- git -C "$DOTFILES_DIR" pull
+        fi
+    fi
+
+    if [ -z "$(ls -A "$DOTFILES_DIR")" ]; then
+        gum style --foreground 212 "Dotfiles directory is empty."
         return 0
     fi
 
-    SELECTED_DE="${DE_CHOICE,,}"
-    local CONFIGS_DIR="de-customizations/$SELECTED_DE"
-
-    if [ ! -d "$CONFIGS_DIR" ] || [ -z "$(ls -A "$CONFIGS_DIR")" ]; then
-        gum style --foreground 212 "Settings directory not found or is empty. (Expected at $CONFIGS_DIR)"
-        return 0
-    fi
-
-    # List directories in dotfiles to allow selection
-    local TARGETS=$(find "$CONFIGS_DIR" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; 2>/dev/null)
+    # List directories in dotfiles to allow selection (exclude .git)
+    local TARGETS=$(find "$DOTFILES_DIR" -mindepth 1 -maxdepth 1 -type d -not -name ".git" -exec basename {} \; 2>/dev/null)
 
     if [ -z "$TARGETS" ]; then
-        gum style --foreground 212 "No configuration directories found in $CONFIGS_DIR."
+        gum style --foreground 212 "No configuration packages found in $DOTFILES_DIR."
         return 0
     fi
 
@@ -30,10 +43,25 @@ configure_de_customizations() {
 }
 
 install_de_customizations() {
-    local CONFIGS_DIR="de-customizations/$SELECTED_DE"
+    # Ensure stow is installed
+    if ! command -v stow &> /dev/null; then
+        gum spin --spinner dot --title "Installing GNU Stow..." -- sudo pacman -S --noconfirm stow
+    fi
+
     if [ -n "$DE_CUSTOMIZATIONS_SELECTED" ]; then
-        for app in $DE_CUSTOMIZATIONS_SELECTED; do
-            gum spin --spinner dot --title "Stowing $app..." -- stow -d "$CONFIGS_DIR" -t "$HOME" "$app"
+        local SORTED_APPS=$(echo "$DE_CUSTOMIZATIONS_SELECTED" | grep -v "^hyprland$")
+        if echo "$DE_CUSTOMIZATIONS_SELECTED" | grep -q "^hyprland$"; then
+            SORTED_APPS="$SORTED_APPS hyprland"
+        fi
+
+        for app in $SORTED_APPS; do
+            # Use --adopt to handle existing files by adopting them, then reset git to discard local changes
+            if ! gum spin --spinner dot --title "Stowing $app..." -- stow --restow --adopt -d "$DOTFILES_DIR" -t "$HOME" "$app"; then
+                gum style --foreground 196 "Stow failed for $app. Retrying to show error..."
+                stow --restow --adopt -v -d "$DOTFILES_DIR" -t "$HOME" "$app"
+            else
+                git -C "$DOTFILES_DIR" restore "$app" &> /dev/null
+            fi
         done
         gum style --foreground 76 "Configs applied."
     fi
