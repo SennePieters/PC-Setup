@@ -31,7 +31,7 @@ install_applications() {
                 if [ -f "PKGBUILD.sh" ] && [ ! -f "PKGBUILD" ]; then
                     mv "PKGBUILD.sh" "PKGBUILD"
                 fi
-                makepkg -si --noconfirm
+                PACMAN=paru makepkg -si --noconfirm
             )
         done
         unset IFS
