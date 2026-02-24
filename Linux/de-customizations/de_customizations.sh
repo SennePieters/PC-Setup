@@ -55,13 +55,18 @@ install_de_customizations() {
         fi
 
         for app in $SORTED_APPS; do
-            # Use --adopt to handle existing files by adopting them, then reset git to discard local changes
-            if ! gum spin --spinner dot --title "Stowing $app..." -- stow --restow --adopt -d "$DOTFILES_DIR" -t "$HOME" "$app"; then
-                gum style --foreground 196 "Stow failed for $app. Retrying to show error..."
-                stow --restow --adopt -v -d "$DOTFILES_DIR" -t "$HOME" "$app"
-            else
-                git -C "$DOTFILES_DIR" restore "$app" &> /dev/null
+            # 1. Use --adopt for plain files and --override='.*' for symlinks
+            if ! gum spin --spinner dot --title "Stowing $app..." -- stow --restow --adopt --override='.*' -d "$DOTFILES_DIR" -t "$HOME" "$app"; then
+                gum style --foreground 196 "Stow encountered an issue for $app. Showing details..."
+                # Run verbosely so the user can see the exact conflict
+                stow --restow --adopt --override='.*' -v -d "$DOTFILES_DIR" -t "$HOME" "$app"
             fi
+            
+            # 2. ALWAYS run git restore, regardless of whether stow succeeded or failed
+            # This guarantees that the repo version of the file is what ends up in your $HOME
+            git -C "$DOTFILES_DIR" restore "$app" &> /dev/null
+            git -C "$DOTFILES_DIR" clean -fd "$app" &> /dev/null
+            
         done
         gum style --foreground 76 "Configs applied."
     fi
