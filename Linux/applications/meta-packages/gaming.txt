@@ -1,0 +1,4 @@
+steam
+obs-studio
+modrinth-app-bin
+cachyos-gaming-meta

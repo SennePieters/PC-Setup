@@ -43,6 +43,14 @@ configure_de_customizations() {
 }
 
 install_de_customizations() {
+    # Install packages from packages.txt if present
+    local PKG_FILE="de-customizations/hyprland.txt"
+    if [ -f "$PKG_FILE" ]; then
+        gum style --foreground 212 "Installing DE packages..."
+        PACKAGES=$(grep -vE '^\s*#|^\s*$' "$PKG_FILE" | tr '\n' ' ')
+        [ -n "$PACKAGES" ] && paru -S --noconfirm $PACKAGES
+    fi
+
     # Ensure stow is installed
     if ! command -v stow &> /dev/null; then
         gum spin --spinner dot --title "Installing GNU Stow..." -- sudo pacman -S --noconfirm stow
