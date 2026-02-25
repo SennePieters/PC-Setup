@@ -22,7 +22,7 @@ configure_applications() {
         MANUAL_PACKAGES_SELECTED=""
     elif [ "$MODE" == "Manual Install" ]; then
         # Combine all package lists
-        local ALL_PKGS=$(cat "$META_PKG_DIR"/*.txt 2>/dev/null | grep -vE '^\s*#|^\s*$' | sort | uniq)
+        local ALL_PKGS=$(cat "$META_PKG_DIR"/*.txt 2>/dev/null | sed 's/\r//g' | grep -vE '^\s*#|^\s*$' | awk '{$1=$1};1' | sort | uniq)
         
         if [ -n "$ALL_PKGS" ]; then
             MANUAL_PACKAGES_SELECTED=$(echo "$ALL_PKGS" | gum choose --no-limit --height 15 --header "Select Individual Packages")
@@ -37,31 +37,42 @@ configure_applications() {
 install_applications() {
     local META_PKG_DIR="applications/meta-packages"
 
+    # Refresh sudo credentials to prevent paru from hanging on password prompt
+    sudo -v
+
+    local PACKAGES_TO_INSTALL=""
+
     if [ -n "$APPLICATIONS_SELECTED" ]; then
         # Set Internal Field Separator to newline to handle multiple selections
         IFS=$'\n'
         for item in $APPLICATIONS_SELECTED; do
             # Extract directory name (text before " |")
             pkg=$(echo "$item" | cut -d '|' -f1 | xargs)
-            
             local PKG_FILE="$META_PKG_DIR/$pkg.txt"
             if [ -f "$PKG_FILE" ]; then
-                gum style --foreground 212 "Installing packages for $pkg..."
-                # Read packages, ignoring comments and empty lines
-                PACKAGES=$(grep -vE '^\s*#|^\s*$' "$PKG_FILE" | tr '\n' ' ')
-                [ -n "$PACKAGES" ] && paru -S --noconfirm $PACKAGES
+                # Append packages from file to the list, adding a space at the end
+                PACKAGES_TO_INSTALL+=$(cat "$PKG_FILE" | sed 's/\r//g' | grep -vE '^\s*#|^\s*$' | awk '{$1=$1};1' | tr '\n' ' ')" "
             fi
         done
-        unset IFS
     fi
+    unset IFS
 
     if [ -n "$MANUAL_PACKAGES_SELECTED" ]; then
-        gum style --foreground 212 "Installing manually selected packages..."
-        local MANUAL_LIST=$(echo "$MANUAL_PACKAGES_SELECTED" | tr '\n' ' ')
-        paru -S --noconfirm $MANUAL_LIST
+        PACKAGES_TO_INSTALL+=$(echo "$MANUAL_PACKAGES_SELECTED" | tr '\n' ' ')
     fi
 
-    if [ -n "$APPLICATIONS_SELECTED" ] || [ -n "$MANUAL_PACKAGES_SELECTED" ]; then
+    # Trim leading/trailing whitespace from the final list
+    PACKAGES_TO_INSTALL=$(echo "$PACKAGES_TO_INSTALL" | awk '{$1=$1};1')
+
+    if [ -n "$PACKAGES_TO_INSTALL" ]; then
+        gum style --foreground 212 "Installing all selected packages..."
+        # Use `yes` to auto-confirm any prompts that --noconfirm might miss
+        if ! yes | paru -S --noconfirm --skipreview --needed $PACKAGES_TO_INSTALL; then
+            gum style --foreground 212 "Batch install failed. Attempting to install packages individually..."
+            for package in $PACKAGES_TO_INSTALL; do
+                yes | paru -S --noconfirm --skipreview --needed "$package" || gum style --foreground 196 "--> Failed to install '$package', skipping."
+            done
+        fi
         gum style --foreground 76 "Finished installing applications."
     else
         gum style --foreground 212 "No package groups selected."
