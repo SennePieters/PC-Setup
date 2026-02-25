@@ -44,11 +44,20 @@ configure_workspaces() {
 
 install_workspaces() {
     # Install packages from packages.txt if present
-    local PKG_FILE="de-customizations/hyprland.txt"
+    local IFS=$' \t\n'
+    local PKG_FILE="workspaces/hyprland.txt"
     if [ -f "$PKG_FILE" ]; then
         gum style --foreground 212 "Installing DE packages..."
-        PACKAGES=$(grep -vE '^\s*#|^\s*$' "$PKG_FILE" | tr '\n' ' ')
-        [ -n "$PACKAGES" ] && paru -S --noconfirm $PACKAGES
+        PACKAGES=$(cat "$PKG_FILE" | sed 's/\r//g' | grep -vE '^\s*#|^\s*$' | awk '{$1=$1};1' | tr '\n' ' ')
+        if [ -n "$PACKAGES" ]; then
+            # Use `yes` to auto-confirm any prompts that --noconfirm might miss
+            if ! yes | paru -S --noconfirm --skipreview --needed $PACKAGES; then
+                gum style --foreground 212 "Batch install failed. Attempting to install packages individually..."
+                for package in $PACKAGES; do
+                    yes | paru -S --noconfirm --skipreview --needed "$package" || gum style --foreground 196 "--> Failed to install '$package', skipping."
+                done
+            fi
+        fi
     fi
 
     # Ensure stow is installed
