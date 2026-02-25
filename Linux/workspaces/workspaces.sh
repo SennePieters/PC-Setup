@@ -6,7 +6,7 @@
 DOTFILES_REPO="https://github.com/SennePieters/.dotfiles.git"
 DOTFILES_DIR="$HOME/.dotfiles"
 
-configure_de_customizations() {
+configure_workspaces() {
     # Ensure Git is installed
     if ! command -v git &> /dev/null; then
         gum spin --spinner dot --title "Installing Git..." -- sudo pacman -S --noconfirm git
@@ -42,7 +42,7 @@ configure_de_customizations() {
     DE_CUSTOMIZATIONS_SELECTED=$(echo "$TARGETS" | gum choose --no-limit --header "Select Configs to Stow")
 }
 
-install_de_customizations() {
+install_workspaces() {
     # Install packages from packages.txt if present
     local PKG_FILE="de-customizations/hyprland.txt"
     if [ -f "$PKG_FILE" ]; then

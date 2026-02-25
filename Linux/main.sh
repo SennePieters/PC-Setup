@@ -19,13 +19,13 @@ fi
 source ./system-settings/system_settings.sh
 source ./applications/applications.sh
 source ./application-settings/application_settings.sh
-source ./de-customizations/de_customizations.sh
+source ./workspaces/workspaces.sh
 
 MODULES=(
     "System Settings"
     "Applications"
     "Application Settings"
-    "DE Customizations"
+    "Workspaces"
 )
 
 while true; do
@@ -50,7 +50,7 @@ while true; do
             "System Settings")          configure_system_settings || true ;;
             "Applications")             configure_applications || true ;;
             "Application Settings")     configure_application_settings || true ;;
-            "DE Customizations")        configure_de_customizations || true ;;
+            "Workspaces")               configure_workspaces || true ;;
         esac
     done
     unset IFS
@@ -64,7 +64,7 @@ while true; do
             "System Settings")          install_system_settings || true ;;
             "Applications")             install_applications || true ;;
             "Application Settings")     install_application_settings || true ;;
-            "DE Customizations")        install_de_customizations || true ;;
+            "Workspaces")               install_workspaces || true ;;
         esac
     done
     unset IFS
