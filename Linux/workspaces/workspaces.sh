@@ -40,6 +40,12 @@ configure_workspaces() {
     fi
 
     DE_CUSTOMIZATIONS_SELECTED=$(echo "$TARGETS" | gum choose --no-limit --header "Select Configs to Stow")
+
+    if gum confirm "Install & Configure GNOME Keyring (PAM)?"; then
+        SETUP_KEYRING=true
+    else
+        SETUP_KEYRING=false
+    fi
 }
 
 install_workspaces() {
@@ -86,5 +92,51 @@ install_workspaces() {
             
         done
         gum style --foreground 76 "Configs applied."
+    fi
+
+    if [ "$SETUP_KEYRING" = true ]; then
+        gum style --foreground 212 "Installing GNOME Keyring..."
+        yes | paru -S --noconfirm --skipreview --needed gnome-keyring
+
+        gum style --foreground 212 "Configuring PAM for auto-unlock..."
+
+        inject_pam_config() {
+            local FILE="$1"
+            local TYPE="$2"
+            local LINE="$3"
+
+            if [ ! -f "$FILE" ]; then
+                gum style --foreground 196 "Warning: $FILE not found. Skipping."
+                return
+            fi
+
+            if grep -qF "$LINE" "$FILE"; then
+                gum style --foreground 240 "  -> $FILE already configured for $TYPE."
+                return
+            fi
+
+            gum style --foreground 212 "  -> Injecting $TYPE into $FILE..."
+            
+            local TEMP_FILE=$(mktemp)
+            awk -v type="$TYPE" -v line="$LINE" '
+                { buffer[NR] = $0 }
+                $1 == type { last_match = NR }
+                END {
+                    for (i = 1; i <= NR; i++) {
+                        print buffer[i]
+                        if (i == last_match) print line
+                    }
+                }
+            ' "$FILE" > "$TEMP_FILE"
+            sudo tee "$FILE" < "$TEMP_FILE" > /dev/null
+            rm "$TEMP_FILE"
+        }
+
+        inject_pam_config "/etc/pam.d/sddm" "auth" "auth optional pam_gnome_keyring.so"
+        inject_pam_config "/etc/pam.d/sddm" "session" "session optional pam_gnome_keyring.so auto_start"
+        inject_pam_config "/etc/pam.d/login" "auth" "auth optional pam_gnome_keyring.so"
+        inject_pam_config "/etc/pam.d/login" "session" "session optional pam_gnome_keyring.so auto_start"
+        
+        gum style --foreground 76 "GNOME Keyring setup complete."
     fi
 }
