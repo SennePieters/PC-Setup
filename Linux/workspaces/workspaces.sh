@@ -100,6 +100,9 @@ install_workspaces() {
 
         gum style --foreground 212 "Configuring PAM for auto-unlock..."
 
+        # Refresh sudo credentials before editing system files
+        sudo -v
+
         inject_pam_config() {
             local FILE="$1"
             local TYPE="$2"
@@ -122,6 +125,7 @@ install_workspaces() {
                 { buffer[NR] = $0 }
                 $1 == type { last_match = NR }
                 END {
+                    if (last_match == 0) last_match = NR
                     for (i = 1; i <= NR; i++) {
                         print buffer[i]
                         if (i == last_match) print line
