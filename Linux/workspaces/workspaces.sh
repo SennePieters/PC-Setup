@@ -46,6 +46,12 @@ configure_workspaces() {
     else
         SETUP_KEYRING=false
     fi
+
+    if gum confirm "Use advanced keybindings?"; then
+        SETUP_KEYBINDS=true
+    else
+        SETUP_KEYBINDS=false
+    fi
 }
 
 install_workspaces() {
@@ -142,5 +148,33 @@ install_workspaces() {
         inject_pam_config "/etc/pam.d/login" "session" "session optional pam_gnome_keyring.so auto_start"
         
         gum style --foreground 76 "GNOME Keyring setup complete."
+    fi
+
+    if [ "$SETUP_KEYBINDS" = true ]; then
+        gum style --foreground 212 "Installing Kanata..."
+        yes | paru -S --noconfirm --skipreview --needed kanata-bin
+
+        gum style --foreground 212 "Setting up uinput permissions..."
+        sudo -v
+        if ! getent group uinput >/dev/null; then sudo groupadd uinput; fi
+        sudo usermod -aG input "$USER"
+        sudo usermod -aG uinput "$USER"
+        echo 'KERNEL=="uinput", MODE="0660", GROUP="uinput", OPTIONS+="static_node=uinput"' | sudo tee /etc/udev/rules.d/99-input.rules > /dev/null
+        sudo udevadm control --reload-rules && sudo udevadm trigger
+        sudo modprobe uinput
+
+        gum style --foreground 212 "Enabling Kanata service..."
+        systemctl --user daemon-reload
+        systemctl --user enable --now kanata.service
+
+        # Verification step
+        if systemctl --user is-active --quiet kanata.service; then
+            gum style --foreground 76 "Kanata service is running successfully."
+        else
+            gum style --foreground 196 "Kanata service failed to start. Please check the logs with 'journalctl --user -u kanata.service'."
+        fi
+
+        gum style --foreground 76 "Keybinds setup complete."
+        gum style --foreground 212 "Note: Reboot required for group permissions."
     fi
 }
